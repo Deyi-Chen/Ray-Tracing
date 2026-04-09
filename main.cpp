@@ -1,21 +1,41 @@
 #include <iostream>
 #include "vec3.h"
+#include "ray.h"
 #include "color.h"
+
+color ray_color(const Ray&r){
+    vec3 unit_dir=unit_vector(r.B);
+    double a = 0.5 * (unit_dir.y() + 1.0);
+    return (1.0 - a) * color(1.0, 1.0, 1.0)+ a * color(0.5, 0.7, 1.0);
+}
 
 int main()
 {
-    int image_width = 256;
-    int image_height = 256;
+    //image
+    int image_width = 400;
+    int image_height = 225;
+
+    //viewport
+    double port_width=2.0;
+    double port_height=port_width*((double)image_height/image_width);
+    vec3 port_top_left=vec3(-port_width/2,port_height/2,-1);
+    vec3 delta_w=vec3(port_width/image_width,0,0);
+    vec3 delta_h=vec3(0,-port_height/image_height,0);
+
+    //camera origin
+    vec3 camera_o=vec3(0.0,0.0,0.0);
 
     std::cout << "P3\n"
-              << image_width << ' ' << image_height << "\n"
-              << "255\n";
-    for (int j = 0; j < image_height; j++)
-    {
-        std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
-        for (int i = 0; i < image_width; i++)
-        {
-            vec3 pixel_color((double)i / (image_width - 1), (double)j / (image_height - 1), 0.0);
+          << image_width << ' ' << image_height << "\n"
+          << "255\n";
+          
+    for(int i=0;i<image_height;i++){
+        std::clog << "\rScanlines remaining: " << (image_height - i) << ' ' << std::flush;
+        for(int j=0;j<image_width;j++){
+            vec3 pos=port_top_left+j*delta_w+i*delta_h;
+            vec3 dir=pos-camera_o;
+            Ray r=Ray(camera_o,dir);
+            color pixel_color=ray_color(r);
             write_color(std::cout, pixel_color);
         }
     }

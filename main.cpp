@@ -3,7 +3,28 @@
 #include "ray.h"
 #include "color.h"
 
+bool hit_sphere(const vec3&center,const Ray&r, double radius){
+    auto oc=center-r.A;
+    auto d=r.B;
+    auto a=dot(d,d);
+    auto b=-2*dot(d,oc);
+    auto c=dot(oc,oc)-radius*radius;
+    //the delta is a known number
+    auto delta=b*b-4*a*c;
+    if(delta<0){
+        return false;
+    }
+    else{
+        return true;
+    }
+}
+
 color ray_color(const Ray&r){
+    vec3 sphere_center=vec3(0,0,-3);
+    double sphere_radius=0.8;
+    if(hit_sphere(sphere_center,r,sphere_radius)){
+        return color(1,0,0);
+    }
     vec3 unit_dir=unit_vector(r.B);
     double a = 0.5 * (unit_dir.y() + 1.0);
     return (1.0 - a) * color(1.0, 1.0, 1.0)+ a * color(0.5, 0.7, 1.0);

@@ -9,11 +9,25 @@ class hit_record{
         vec3 p;
         double t;
         vec3 normal;
+        bool front_face;
         hit_record(){
             p=vec3();
             t=0.0;
             normal=vec3();
+            front_face=true;
         }
+        void set_face_normal(const Ray&r,const vec3& outward_normal){
+            //if ray comes outside from the sphere, then the dot is negative, front_face is true
+            front_face=dot(r.direction,outward_normal)<0;
+            if(!front_face){
+                //if it comes inside the sphere, reverse the direction of normal
+                normal=-1*outward_normal;
+            }
+            else{
+                normal=outward_normal;
+            }
+        }
+
 };
 
 class hittable{

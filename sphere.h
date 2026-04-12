@@ -37,7 +37,8 @@ public:
         }
         rec.p = r.at(t);
         rec.t = t;
-        rec.normal = unit_vector(rec.p - center);
+        vec3 outward_normal = unit_vector(rec.p - center);
+        rec.set_face_normal(r, outward_normal);
         return true;
     }
 

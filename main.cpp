@@ -5,51 +5,19 @@
 #include "sphere.h"
 #include "rtweekend.h"
 #include "hittable_list.h"
-
-color ray_color(const Ray&r, const hittable & world){
-    hit_record rec;
-    if(world.hit(r,0.001,infinity,rec)){
-        return 0.5 * (rec.normal + color(1,1,1));
-    }
-    vec3 unit_dir=unit_vector(r.direction);
-    double a = 0.5 * (unit_dir.y() + 1.0);
-    return (1.0 - a) * color(1.0, 1.0, 1.0)+ a * color(0.5, 0.7, 1.0);
-}
+#include "camera.h"
 
 int main()
 {
-    //image
-    int image_width = 400;
-    int image_height = 225;
-
-    //viewport
-    double port_width=2.0;
-    double port_height=port_width*((double)image_height/image_width);
-    vec3 port_top_left=vec3(-port_width/2,port_height/2,-1);
-    vec3 delta_w=vec3(port_width/image_width,0,0);
-    vec3 delta_h=vec3(0,-port_height/image_height,0);
-
-    //camera origin
-    vec3 camera_o=vec3(0.0,0.0,0.0);
-
     //world
     hittable_list world;
     world.add(make_shared<Sphere>(vec3(0,0,-3), 0.8));
     world.add(make_shared<Sphere>(vec3(0,-100.8,-3), 100));
 
-    std::cout << "P3\n"
-          << image_width << ' ' << image_height << "\n"
-          << "255\n";
-          
-    for(int i=0;i<image_height;i++){
-        std::clog << "\rScanlines remaining: " << (image_height - i) << ' ' << std::flush;
-        for(int j=0;j<image_width;j++){
-            vec3 pos=port_top_left+j*delta_w+i*delta_h;
-            vec3 dir=pos-camera_o;
-            Ray r=Ray(camera_o,dir);
-            color pixel_color=ray_color(r,world);
-            write_color(std::cout, pixel_color);
-        }
-    }
-    std::clog << "\rDone.                 \n";
+    //camera
+    camera cam;
+    cam.image_width=400;
+    cam.aspect_ratio=16.0/9.0;
+    cam.render(world);
+    
 }

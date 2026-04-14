@@ -11,11 +11,13 @@ class camera{
     public:
         double aspect_ratio=16.0/9.0;
         int image_width=400;
+        int samples_per_pixel=5; 
         void render(const hittable& world);
     private:
         int image_height;
         double port_width;
         double port_height;
+        double pixel_samples_scale;
         vec3 port_top_left;
         vec3 delta_w;
         vec3 delta_h;
@@ -24,13 +26,32 @@ class camera{
 
         void initialize();
         color ray_color(const Ray&r, const hittable&world)const;
+        vec3 sample_square() const;
+        Ray get_ray(int i, int j) const;
 };
+
+vec3 camera::sample_square() const{
+    //return offset by [-0.5, 0.5] × [-0.5, 0.5] 
+    double offset1=(random_double(0,2)-1)*0.5;
+    double offset2=(random_double(0,2)-1)*0.5;
+    return vec3(offset1,offset2,0);
+}
+
+Ray camera::get_ray(int i, int j) const{
+    //(i, j) pixel+ random offset→ shoot a ray from camera 
+    vec3 offset=sample_square();
+    vec3 pixel_loc=pixel00_loc+(i+offset.x())*delta_w+(j+offset.y())*delta_h;
+    vec3 direction=pixel_loc-camera_o;
+    return Ray(camera_o,direction);
+}
+
 
 color camera::ray_color(const Ray&r, const hittable & world)const{
     hit_record rec;
     if(world.hit(r,0.001,infinity,rec)){
         return 0.5 * (rec.normal + color(1,1,1));
     }
+    //sky
     vec3 unit_dir=unit_vector(r.direction);
     double a = 0.5 * (unit_dir.y() + 1.0);
     return (1.0 - a) * color(1.0, 1.0, 1.0)+ a * color(0.5, 0.7, 1.0);
@@ -42,13 +63,15 @@ void camera::render(const hittable& world){
           << image_width << ' ' << image_height << "\n"
           << "255\n";
           
-    for(int i=0;i<image_height;i++){
-        std::clog << "\rScanlines remaining: " << (image_height - i) << ' ' << std::flush;
-        for(int j=0;j<image_width;j++){
-            vec3 pos=pixel00_loc+j*delta_w+i*delta_h;
-            vec3 dir=pos-camera_o;
-            Ray r=Ray(camera_o,dir);
-            color pixel_color=ray_color(r,world);
+    for(int j=0;j<image_height;j++){
+        std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
+        for(int i=0;i<image_width;i++){
+            color pixel_color(0,0,0);
+            for(int s=0;s<samples_per_pixel;s++){
+                Ray r = get_ray(i, j);
+                pixel_color += ray_color(r, world);
+            }
+            pixel_color *= pixel_samples_scale;
             write_color(std::cout, pixel_color);
         }
     }
@@ -67,5 +90,7 @@ void camera::initialize(){
     pixel00_loc=port_top_left+0.5*(delta_w+delta_h);
     //camera origin
     camera_o=vec3(0.0,0.0,0.0);
+    //antialiasing
+    pixel_samples_scale = 1.0 / samples_per_pixel;
 }
 #endif

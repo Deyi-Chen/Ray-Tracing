@@ -38,4 +38,27 @@ inline double random_double(double min, double max) {
     return min + (max - min) * random_double();
 }
 
+inline vec3 random(double min, double max){
+    return vec3(random_double(min,max), random_double(min,max), random_double(min,max));
+}
+
+inline vec3 random_in_unit_sphere(){
+    vec3 trail=random(-1,1);
+    while(trail.length_squared()>1 || trail.length_squared()<1e-160){
+        trail=random(-1,1);
+    }
+    return trail;
+}
+
+inline vec3 random_unit_vector(){
+    return unit_vector(random_in_unit_sphere()); //vectors are uniformally distributed in the sphere
+}
+
+inline vec3 random_in_hemisphere(const vec3& normal){
+    vec3 trail=random_unit_vector();
+    if(dot(trail,normal)<0){ //<0 means 
+        trail=-1*trail;
+    }
+    return trail;
+}
 #endif

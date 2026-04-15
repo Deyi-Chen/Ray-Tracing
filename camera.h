@@ -12,6 +12,7 @@ class camera{
         double aspect_ratio=16.0/9.0;
         int image_width=400;
         int samples_per_pixel=5; 
+        int max_depth=50;
         void render(const hittable& world);
     private:
         int image_height;
@@ -25,7 +26,7 @@ class camera{
         vec3 pixel00_loc;
 
         void initialize();
-        color ray_color(const Ray&r, const hittable&world)const;
+        color ray_color(const Ray&r, const hittable&world,int depth);
         vec3 sample_square() const;
         Ray get_ray(int i, int j) const;
 };
@@ -46,10 +47,14 @@ Ray camera::get_ray(int i, int j) const{
 }
 
 
-color camera::ray_color(const Ray&r, const hittable & world)const{
+color camera::ray_color(const Ray&r, const hittable & world,int depth){
     hit_record rec;
+    if(depth==0){
+        return color(0,0,0);
+    }
     if(world.hit(r,0.001,infinity,rec)){
-        return 0.5 * (rec.normal + color(1,1,1));
+        Ray new_r(rec.p,random_in_hemisphere(rec.normal));
+        return 0.5*ray_color(new_r,world,depth-1);
     }
     //sky
     vec3 unit_dir=unit_vector(r.direction);
@@ -69,7 +74,7 @@ void camera::render(const hittable& world){
             color pixel_color(0,0,0);
             for(int s=0;s<samples_per_pixel;s++){
                 Ray r = get_ray(i, j);
-                pixel_color += ray_color(r, world);
+                pixel_color += ray_color(r, world,max_depth);
             }
             pixel_color *= pixel_samples_scale;
             write_color(std::cout, pixel_color);

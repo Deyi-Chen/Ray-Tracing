@@ -3,12 +3,15 @@
 #include "ray.h"
 #include "vec3.h"
 
+class material;
+
 class hit_record{
     //return the point of hitting the object, the t in ray, and normal vector
     public:
         vec3 p;
         double t;
         vec3 normal;
+        shared_ptr<material> mat;
         bool front_face;
         hit_record(){
             p=vec3();

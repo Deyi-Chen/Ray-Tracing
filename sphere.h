@@ -8,7 +8,8 @@
 class Sphere : public hittable
 {
 public:
-    Sphere(const vec3 &c, double r)
+    Sphere(const vec3 &c, double r,shared_ptr<material> mat):
+        mat(mat)
     {
         center = c;
         radius = r;
@@ -38,13 +39,15 @@ public:
         rec.p = r.at(t);
         rec.t = t;
         vec3 outward_normal = unit_vector(rec.p - center);
-        rec.set_face_normal(r, outward_normal);
+        rec.set_face_normal(r, outward_normal); //change the normal of the rec
+        rec.mat=mat;
         return true;
     }
 
 private:
     vec3 center;
     double radius;
+    shared_ptr<material> mat;
 };
 
 #endif

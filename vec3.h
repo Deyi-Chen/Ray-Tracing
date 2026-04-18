@@ -52,6 +52,10 @@ class vec3{
         double z()const{
             return e[2];
         }
+        bool near_zero()const{
+            auto s=1e-8;
+            return (std::fabs(e[0])<s)&&(std::fabs(e[1])<s)&&(std::fabs(e[2])<s);
+        }
 
 };
 
@@ -104,6 +108,12 @@ vec3 operator*(double t,const vec3&u){
     return result;
 }
 
+vec3 operator*(const vec3& u, const vec3& v) {
+    return vec3(u.x()*v.x(), u.y()*v.y(), u.z()*v.z());
+}
 
+vec3 reflected(const vec3 normal,const vec3& v){
+    return v-2*dot(v,normal)*normal;
+}
 
 #endif

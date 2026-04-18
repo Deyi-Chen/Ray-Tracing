@@ -6,6 +6,7 @@
 #include "ray.h"
 #include "vec3.h"
 #include "rtweekend.h"
+#include "material.h"
 
 class camera{
     public:
@@ -53,8 +54,12 @@ color camera::ray_color(const Ray&r, const hittable & world,int depth){
         return color(0,0,0);
     }
     if(world.hit(r,0.001,infinity,rec)){
-        Ray new_r(rec.p,rec.normal+random_unit_vector());
-        return 0.5*ray_color(new_r,world,depth-1);
+        Ray scattered;
+        color attenuation;
+        if(rec.mat->scatter(r,rec,attenuation,scattered)){
+            return attenuation*ray_color(scattered,world,depth-1);
+        }
+        return color(0,0,0);
     }
     //sky
     vec3 unit_dir=unit_vector(r.direction);
@@ -87,8 +92,8 @@ void camera::initialize(){
     image_height = (image_height < 1) ? 1 : image_height;
     
     //viewport
-    port_width=2.0;
-    port_height=port_width*((double)image_height/image_width);
+    port_height=2.0;
+    port_width=port_height*((double)image_width/image_height);
     port_top_left=vec3(-port_width/2,port_height/2,-1);
     delta_w=vec3(port_width/image_width,0,0);
     delta_h=vec3(0,-port_height/image_height,0);

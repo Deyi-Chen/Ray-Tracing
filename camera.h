@@ -53,7 +53,7 @@ color camera::ray_color(const Ray&r, const hittable & world,int depth){
         return color(0,0,0);
     }
     if(world.hit(r,0.001,infinity,rec)){
-        Ray new_r(rec.p,random_in_hemisphere(rec.normal));
+        Ray new_r(rec.p,rec.normal+random_unit_vector());
         return 0.5*ray_color(new_r,world,depth-1);
     }
     //sky

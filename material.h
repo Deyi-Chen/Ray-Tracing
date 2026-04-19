@@ -32,19 +32,20 @@ class lambertian:public material{
 
 class metal:public material{
     public:
-        metal(const color& albedo):
-            albedo(albedo){}
+        metal(const color& albedo,double fuzz):
+            albedo(albedo),fuzz(fuzz = (fuzz < 1) ? fuzz : 1){}
         bool scatter(const Ray &r, const hit_record &rec, color &attenuation, Ray&scattered)override{
-            auto scatter_direction=reflected(rec.normal,r.direction);
+            auto scatter_direction=unit_vector(reflected(rec.normal,r.direction))+fuzz*random_unit_vector();
             if(scatter_direction.near_zero()){
                 scatter_direction=rec.normal;
             }
             scattered=Ray(rec.p,scatter_direction);
             attenuation=albedo;
-            return true;
+            return (dot(scatter_direction,rec.normal)>0);
         }
     private:
         color albedo;
+        double fuzz;
 };
 
 #endif

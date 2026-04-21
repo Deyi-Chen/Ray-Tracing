@@ -48,4 +48,26 @@ class metal:public material{
         double fuzz;
 };
 
+
+class dielectric:public material{
+    public:
+        dielectric(double refraction_index):
+            refraction_index(refraction_index){}
+        bool scatter(const Ray &r, const hit_record &rec, color &attenuation, Ray&scattered)override{
+            attenuation=color(1,1,1);
+            double ri;
+            if(rec.front_face){
+                ri=1.0/refraction_index;
+            }
+            else{
+                ri=refraction_index;
+            }
+            vec3 direction=refract(r.direction,rec.normal,ri);
+            scattered=Ray(rec.p,direction);
+            return true;
+        }
+    private:
+        double refraction_index;
+};
+
 #endif

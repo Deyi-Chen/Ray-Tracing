@@ -116,4 +116,11 @@ vec3 reflected(const vec3 normal,const vec3& v){
     return v-2*dot(v,normal)*normal;
 }
 
+vec3 refract(const vec3& r, const vec3&n,double eta_divided_eta_prime){
+    vec3 unit_r=unit_vector(r);
+    vec3 r_horizontal=unit_r-dot(unit_r,n)*n;
+    r_horizontal*=eta_divided_eta_prime;
+    auto r_vertical=-1*n*((sqrt(fabs(1-r_horizontal.length_squared()))));
+    return r_horizontal+r_vertical;
+}
 #endif

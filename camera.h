@@ -14,18 +14,22 @@ class camera{
         int image_width=400;
         int samples_per_pixel=5; 
         int max_depth=50;
+        double vfov=90;
         void render(const hittable& world);
+        vec3 lookat=vec3(0,0,-1);
+        vec3 lookfrom=vec3(0,0,0);
+        vec3 vup=vec3(0,1,0);
     private:
         int image_height;
         double port_width;
         double port_height;
         double pixel_samples_scale;
         vec3 port_top_left;
-        vec3 delta_w;
-        vec3 delta_h;
+        vec3 delta_u;
+        vec3 delta_v;
         vec3 camera_o;
         vec3 pixel00_loc;
-
+        vec3 u,v,w;
         void initialize();
         color ray_color(const Ray&r, const hittable&world,int depth);
         vec3 sample_square() const;
@@ -42,7 +46,7 @@ vec3 camera::sample_square() const{
 Ray camera::get_ray(int i, int j) const{
     //(i, j) pixel+ random offset→ shoot a ray from camera 
     vec3 offset=sample_square();
-    vec3 pixel_loc=pixel00_loc+(i+offset.x())*delta_w+(j+offset.y())*delta_h;
+    vec3 pixel_loc=pixel00_loc+(i+offset.x())*delta_u+(j+offset.y())*delta_v;
     vec3 direction=pixel_loc-camera_o;
     return Ray(camera_o,direction);
 }
@@ -90,17 +94,29 @@ void camera::render(const hittable& world){
 void camera::initialize(){
     image_height=int(image_width/aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
-    
-    //viewport
-    port_height=2.0;
-    port_width=port_height*((double)image_width/image_height);
-    port_top_left=vec3(-port_width/2,port_height/2,-1);
-    delta_w=vec3(port_width/image_width,0,0);
-    delta_h=vec3(0,-port_height/image_height,0);
-    pixel00_loc=port_top_left+0.5*(delta_w+delta_h);
     //camera origin
-    camera_o=vec3(0.0,0.0,0.0);
+    camera_o=lookfrom;
     //antialiasing
     pixel_samples_scale = 1.0 / samples_per_pixel;
+    //port_width and height
+    auto focal_length=(lookfrom-lookat).length();
+    auto theta=degrees_to_radians(vfov);
+    auto h=std::tan(theta/2);
+    port_height=2*h*focal_length;
+    port_width=port_height*((double)image_width/image_height);
+
+    //basis vector
+    w=unit_vector(lookfrom-lookat);
+    u=unit_vector(cross(vup,w));
+    v=cross(w,u);
+
+    vec3 viewport_u=port_width*u;
+    vec3 viewport_v=port_height*(-1*v);
+
+    delta_u=viewport_u/image_width;
+    delta_v=viewport_v / image_height;
+    port_top_left=camera_o-(focal_length*w)-(viewport_u)/2-(viewport_v/2);
+    pixel00_loc=port_top_left+0.5*(delta_u+delta_v);
+
 }
 #endif

@@ -84,6 +84,14 @@ double dot(const vec3&u,const vec3&v){
     return result;
 }
 
+vec3 cross(const vec3& a, const vec3& b) {
+    return vec3(
+        a.y()*b.z() - a.z()*b.y(),
+        a.z()*b.x() - a.x()*b.z(),
+        a.x()*b.y() - a.y()*b.x()
+    );
+}
+
 vec3 operator-(const vec3&u,const vec3&v){
     vec3 result=vec3();
     for(int i=0;i<3;i++){ 
@@ -96,6 +104,13 @@ vec3 operator*(const vec3&u,double t){
     vec3 result=vec3();
     for(int i=0;i<3;i++){ 
         result.e[i]=u.e[i]*t;
+    }
+    return result;
+}
+vec3 operator/(const vec3&u,double t){
+    vec3 result=vec3();
+    for(int i=0;i<3;i++){ 
+        result.e[i]=u.e[i]/t;
     }
     return result;
 }

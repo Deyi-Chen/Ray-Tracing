@@ -73,7 +73,7 @@ public:
             ri = refraction_index;
         }
         vec3 unit_dir = unit_vector(r.direction);
-        double cos_theta = std::min(-1 * dot(unit_dir, rec.normal), 1.0);
+        double cos_theta = std::fmin(std::max(-1 * dot(unit_dir, rec.normal),0.0), 1.0);
         double sin_theta = sqrt(1 - cos_theta * cos_theta);
         bool cannot_refract = (ri * sin_theta) > 1.0;
         vec3 direction;

@@ -2,10 +2,22 @@
 #define VEC3_H
 
 #include <cmath>
+#include <cstdlib>
+
+inline double random_double() {
+    // [0,1) random number
+    return std::rand() / (RAND_MAX + 1.0);
+}
+
+inline double random_double(double min, double max) {
+    // [min,max) random number
+    return min + (max - min) * random_double();
+}
 
 class vec3{
     public:
-        double e[3];        vec3(){
+        double e[3];
+        vec3(){
             for(int i=0;i<3;i++){
                 e[i]=0.0;
             }
@@ -57,12 +69,21 @@ class vec3{
             return (std::fabs(e[0])<s)&&(std::fabs(e[1])<s)&&(std::fabs(e[2])<s);
         }
 
+        static vec3 random() {
+            return vec3(random_double(), random_double(), random_double());
+        }
+
+        static vec3 random(double min, double max) {
+            return vec3(random_double(min, max),
+                        random_double(min, max),
+                        random_double(min, max));
+        }
 };
 
 vec3 operator+(const vec3&u,const vec3&v){
     vec3 result=vec3();
     for(int i=0;i<3;i++){
-        result.e[i]=u.e[i]+v.e[i]; //addition for doubles
+        result.e[i]=u.e[i]+v.e[i];
     }
     return result; 
 }
@@ -138,4 +159,5 @@ vec3 refract(const vec3& r, const vec3&n,double eta_divided_eta_prime){
     auto r_vertical=-1*n*((sqrt(fabs(1-r_horizontal.length_squared()))));
     return r_horizontal+r_vertical;
 }
+
 #endif

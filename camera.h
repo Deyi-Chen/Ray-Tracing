@@ -19,6 +19,8 @@ class camera{
         vec3 lookat=vec3(0,0,-1);
         vec3 lookfrom=vec3(0,0,0);
         vec3 vup=vec3(0,1,0);
+        double defocus_angle=0;
+        double focus_dist=10;
     private:
         int image_height;
         double port_width;
@@ -30,9 +32,12 @@ class camera{
         vec3 camera_o;
         vec3 pixel00_loc;
         vec3 u,v,w;
+        vec3 defocus_disk_u;
+        vec3 defocus_disk_v;
         void initialize();
         color ray_color(const Ray&r, const hittable&world,int depth);
         vec3 sample_square() const;
+        vec3 disk_sample()const;
         Ray get_ray(int i, int j) const;
 };
 
@@ -47,11 +52,21 @@ Ray camera::get_ray(int i, int j) const{
     //(i, j) pixel+ random offset→ shoot a ray from camera 
     vec3 offset=sample_square();
     vec3 pixel_loc=pixel00_loc+(i+offset.x())*delta_u+(j+offset.y())*delta_v;
-    vec3 direction=pixel_loc-camera_o;
-    return Ray(camera_o,direction);
+    vec3 origin;
+    if(defocus_angle<=0){
+        origin=camera_o;
+    }
+    else{
+        origin=disk_sample();
+    }
+    vec3 direction=pixel_loc-origin;
+    return Ray(origin,direction);
 }
 
-
+vec3 camera::disk_sample()const{
+    auto p=random_in_unit_disk();
+    return camera_o+p.x()*defocus_disk_u+p.y()*defocus_disk_v;
+}
 color camera::ray_color(const Ray&r, const hittable & world,int depth){
     hit_record rec;
     if(depth==0){
@@ -99,10 +114,10 @@ void camera::initialize(){
     //antialiasing
     pixel_samples_scale = 1.0 / samples_per_pixel;
     //port_width and height
-    auto focal_length=(lookfrom-lookat).length();
+    //auto focal_length=(lookfrom-lookat).length();
     auto theta=degrees_to_radians(vfov);
     auto h=std::tan(theta/2);
-    port_height=2*h*focal_length;
+    port_height=2*h*focus_dist;
     port_width=port_height*((double)image_width/image_height);
 
     //basis vector
@@ -115,8 +130,10 @@ void camera::initialize(){
 
     delta_u=viewport_u/image_width;
     delta_v=viewport_v / image_height;
-    port_top_left=camera_o-(focal_length*w)-(viewport_u)/2-(viewport_v/2);
+    port_top_left=camera_o-(focus_dist*w)-(viewport_u)/2-(viewport_v/2);
     pixel00_loc=port_top_left+0.5*(delta_u+delta_v);
-
+    auto defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle / 2));
+    defocus_disk_u = u * defocus_radius;
+    defocus_disk_v = v * defocus_radius;
 }
 #endif

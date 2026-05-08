@@ -4,160 +4,202 @@
 #include <cmath>
 #include <cstdlib>
 
-inline double random_double() {
+inline double random_double()
+{
     // [0,1) random number
     return std::rand() / (RAND_MAX + 1.0);
 }
 
-inline double random_double(double min, double max) {
+inline double random_double(double min, double max)
+{
     // [min,max) random number
     return min + (max - min) * random_double();
 }
 
-class vec3{
-    public:
-        double e[3];
-        vec3(){
-            for(int i=0;i<3;i++){
-                e[i]=0.0;
-            }
+class vec3
+{
+public:
+    double e[3];
+    vec3()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            e[i] = 0.0;
         }
-        vec3(double x, double y, double z){
-            e[0]=x;
-            e[1]=y;
-            e[2]=z;
+    }
+    vec3(double x, double y, double z)
+    {
+        e[0] = x;
+        e[1] = y;
+        e[2] = z;
+    }
+    vec3 &operator+=(const vec3 &v)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            e[i] += v.e[i];
         }
-        vec3& operator+=(const vec3&v){
-            for (int i=0;i<3;i++){
-                e[i]+=v.e[i];
-            }
-            return *this;
+        return *this;
+    }
+    vec3 &operator*=(double t)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            e[i] *= t;
         }
-        vec3& operator*=(double t){
-            for (int i=0;i<3;i++){
-                e[i]*=t;
-            }
-            return *this;
+        return *this;
+    }
+    vec3 &operator/=(double t)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            e[i] /= t;
         }
-        vec3& operator/=(double t){
-            for (int i=0;i<3;i++){
-                e[i]/=t;
-            }
-            return *this;
+        return *this;
+    }
+    double length_squared() const
+    {
+        double result = 0.0;
+        for (int i = 0; i < 3; i++)
+        {
+            result += e[i] * e[i];
         }
-        double length_squared()const{
-            double result=0.0;
-            for (int i=0;i<3;i++){
-                result+=e[i]*e[i];
-            }
-            return result;
-        }
-        double length() const{
-            return sqrt(length_squared());
-        }
-        double x() const{
-            return e[0];
-        }
-        double y() const{
-            return e[1];
-        }
-        double z()const{
-            return e[2];
-        }
-        bool near_zero()const{
-            auto s=1e-8;
-            return (std::fabs(e[0])<s)&&(std::fabs(e[1])<s)&&(std::fabs(e[2])<s);
-        }
+        return result;
+    }
+    double length() const
+    {
+        return sqrt(length_squared());
+    }
+    double x() const
+    {
+        return e[0];
+    }
+    double y() const
+    {
+        return e[1];
+    }
+    double z() const
+    {
+        return e[2];
+    }
+    bool near_zero() const
+    {
+        auto s = 1e-8;
+        return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s) && (std::fabs(e[2]) < s);
+    }
+    double operator[](int i) const
+    {
+        return e[i];
+    }
 
-        static vec3 random() {
-            return vec3(random_double(), random_double(), random_double());
-        }
+    static vec3 random()
+    {
+        return vec3(random_double(), random_double(), random_double());
+    }
 
-        static vec3 random(double min, double max) {
-            return vec3(random_double(min, max),
-                        random_double(min, max),
-                        random_double(min, max));
-        }
+    static vec3 random(double min, double max)
+    {
+        return vec3(random_double(min, max),
+                    random_double(min, max),
+                    random_double(min, max));
+    }
 };
 
-vec3 operator+(const vec3&u,const vec3&v){
-    vec3 result=vec3();
-    for(int i=0;i<3;i++){
-        result.e[i]=u.e[i]+v.e[i];
-    }
-    return result; 
-}
-
-vec3 unit_vector(const vec3&v){
-    vec3 result=v;
-    double v_length=v.length();
-    for(int i=0;i<3;i++){
-        result.e[i]/=v_length;
+vec3 operator+(const vec3 &u, const vec3 &v)
+{
+    vec3 result = vec3();
+    for (int i = 0; i < 3; i++)
+    {
+        result.e[i] = u.e[i] + v.e[i];
     }
     return result;
 }
 
-double dot(const vec3&u,const vec3&v){
-    double result=0.0;
-    for(int i=0;i<3;i++){
-        result+=u.e[i]*v.e[i];
+vec3 unit_vector(const vec3 &v)
+{
+    vec3 result = v;
+    double v_length = v.length();
+    for (int i = 0; i < 3; i++)
+    {
+        result.e[i] /= v_length;
     }
     return result;
 }
 
-vec3 cross(const vec3& a, const vec3& b) {
+double dot(const vec3 &u, const vec3 &v)
+{
+    double result = 0.0;
+    for (int i = 0; i < 3; i++)
+    {
+        result += u.e[i] * v.e[i];
+    }
+    return result;
+}
+
+vec3 cross(const vec3 &a, const vec3 &b)
+{
     return vec3(
-        a.y()*b.z() - a.z()*b.y(),
-        a.z()*b.x() - a.x()*b.z(),
-        a.x()*b.y() - a.y()*b.x()
-    );
+        a.y() * b.z() - a.z() * b.y(),
+        a.z() * b.x() - a.x() * b.z(),
+        a.x() * b.y() - a.y() * b.x());
 }
 
-vec3 operator-(const vec3&u,const vec3&v){
-    vec3 result=vec3();
-    for(int i=0;i<3;i++){ 
-        result.e[i]=u.e[i]-v.e[i];
+vec3 operator-(const vec3 &u, const vec3 &v)
+{
+    vec3 result = vec3();
+    for (int i = 0; i < 3; i++)
+    {
+        result.e[i] = u.e[i] - v.e[i];
     }
     return result;
 }
 
-vec3 operator*(const vec3&u,double t){
-    vec3 result=vec3();
-    for(int i=0;i<3;i++){ 
-        result.e[i]=u.e[i]*t;
+vec3 operator*(const vec3 &u, double t)
+{
+    vec3 result = vec3();
+    for (int i = 0; i < 3; i++)
+    {
+        result.e[i] = u.e[i] * t;
     }
     return result;
 }
-vec3 operator/(const vec3&u,double t){
-    vec3 result=vec3();
-    for(int i=0;i<3;i++){ 
-        result.e[i]=u.e[i]/t;
-    }
-    return result;
-}
-
-vec3 operator*(double t,const vec3&u){ 
-    vec3 result=vec3();
-    for(int i=0;i<3;i++){ 
-        result.e[i]=u.e[i]*t;
+vec3 operator/(const vec3 &u, double t)
+{
+    vec3 result = vec3();
+    for (int i = 0; i < 3; i++)
+    {
+        result.e[i] = u.e[i] / t;
     }
     return result;
 }
 
-vec3 operator*(const vec3& u, const vec3& v) {
-    return vec3(u.x()*v.x(), u.y()*v.y(), u.z()*v.z());
+vec3 operator*(double t, const vec3 &u)
+{
+    vec3 result = vec3();
+    for (int i = 0; i < 3; i++)
+    {
+        result.e[i] = u.e[i] * t;
+    }
+    return result;
 }
 
-vec3 reflected(const vec3 normal,const vec3& v){
-    return v-2*dot(v,normal)*normal;
+vec3 operator*(const vec3 &u, const vec3 &v)
+{
+    return vec3(u.x() * v.x(), u.y() * v.y(), u.z() * v.z());
 }
 
-vec3 refract(const vec3& r, const vec3&n,double eta_divided_eta_prime){
-    vec3 unit_r=unit_vector(r);
-    vec3 r_horizontal=unit_r-dot(unit_r,n)*n;
-    r_horizontal*=eta_divided_eta_prime;
-    auto r_vertical=-1*n*((sqrt(fabs(1-r_horizontal.length_squared()))));
-    return r_horizontal+r_vertical;
+vec3 reflected(const vec3 normal, const vec3 &v)
+{
+    return v - 2 * dot(v, normal) * normal;
+}
+
+vec3 refract(const vec3 &r, const vec3 &n, double eta_divided_eta_prime)
+{
+    vec3 unit_r = unit_vector(r);
+    vec3 r_horizontal = unit_r - dot(unit_r, n) * n;
+    r_horizontal *= eta_divided_eta_prime;
+    auto r_vertical = -1 * n * ((sqrt(fabs(1 - r_horizontal.length_squared()))));
+    return r_horizontal + r_vertical;
 }
 
 #endif

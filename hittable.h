@@ -2,6 +2,7 @@
 #define HITTABLE_H
 #include "ray.h"
 #include "vec3.h"
+#include "aabb.h"
 
 class material;
 
@@ -40,6 +41,7 @@ class hittable{
         //i need to know how many objects are hit by a particular ray
         //t_min to prevent t=0, and t_max to record the real value of t(closet object); hit_record to record all the information of one trail
         virtual bool hit(const Ray&r,double t_min, double t_max, hit_record &rec)const=0;
+        virtual aabb bounding_box()const=0;
 };
 
 

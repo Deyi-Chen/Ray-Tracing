@@ -4,6 +4,7 @@
 #include "hittable.h"
 #include<memory>
 #include<vector>
+#include "aabb.h"
 
 using std::make_shared;
 using std::shared_ptr;
@@ -15,6 +16,7 @@ class hittable_list:public hittable{
         hittable_list(shared_ptr<hittable>object){add(object);} //pointer for polymorphism
         void add(shared_ptr<hittable>object){
             objects.push_back(object);
+            bbox=aabb(bbox,object->bounding_box());
         }
         bool hit(const Ray&r,double t_min, double t_max, hit_record &rec)const override{
             hit_record temp;
@@ -30,7 +32,9 @@ class hittable_list:public hittable{
             }
             return hit_anything;
         }
-
+        aabb bounding_box() const override { return bbox; }
+    private:
+        aabb bbox;
 };
 
 

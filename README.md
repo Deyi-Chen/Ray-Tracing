@@ -37,9 +37,3 @@ Run and save the rendered image:
 ## Reference
 
 - [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) by Peter Shirley
-
-## Roadmap
-
-Following *Ray Tracing: The Next Week*:
-
-- [ ] BVH acceleration

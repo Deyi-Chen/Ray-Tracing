@@ -8,11 +8,10 @@
 class Sphere : public hittable
 {
 public:
-    Sphere(const vec3 &c, double r,shared_ptr<material> mat):
-        mat(mat)
+    Sphere(const vec3 &c, double r, shared_ptr<material> mat) : mat(mat), center(c), radius(r)
     {
-        center = c;
-        radius = r;
+        auto rvec = vec3(radius, radius, radius);
+        bbox = aabb(center - rvec, center + rvec);
     }
     virtual bool hit(const Ray &r, double t_min, double t_max, hit_record &rec) const override
     {
@@ -28,26 +27,32 @@ public:
             return false;
         }
         auto t = (-b - sqrt(delta)) / (2 * a);
-        //if t is too small or there is a smaller t for some closer object
+        // if t is too small or there is a smaller t for some closer object
         if (t < t_min || t > t_max)
         {
-            t=(-b + sqrt(delta)) / (2 * a);
-            if (t < t_min || t > t_max){
+            t = (-b + sqrt(delta)) / (2 * a);
+            if (t < t_min || t > t_max)
+            {
                 return false;
             }
         }
         rec.p = r.at(t);
         rec.t = t;
         vec3 outward_normal = unit_vector(rec.p - center);
-        rec.set_face_normal(r, outward_normal); //change the normal of the rec
-        rec.mat=mat;
+        rec.set_face_normal(r, outward_normal); // change the normal of the rec
+        rec.mat = mat;
         return true;
+    }
+    aabb bounding_box() const override
+    {
+        return bbox;
     }
 
 private:
     vec3 center;
     double radius;
     shared_ptr<material> mat;
+    aabb bbox;
 };
 
 #endif

@@ -52,4 +52,9 @@ inline vec3 random_in_unit_disk() {
     return result;
 }
 
+inline int random_int(int min, int max) 
+{
+    return int(random_double(min, max+1
+));
+}
 #endif

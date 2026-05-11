@@ -2,7 +2,7 @@
 
 A simple ray tracer implemented while following the **Ray Tracing in One Weekend** tutorial series.
 
-This project renders a basic 3D scene using ray tracing techniques, including rays, spheres, materials, lighting behavior, camera setup, and image output.
+This project renders a basic 3D scene using ray tracing techniques, including rays, spheres, materials, lighting behavior, camera setup, and image output. It also implements a BVH (Bounding Volume Hierarchy) to accelerate ray-object intersection, making it practical to render scenes with hundreds of objects.
 
 ## Preview
 
@@ -18,20 +18,26 @@ This project renders a basic 3D scene using ray tracing techniques, including ra
 - Metal materials with fuzz
 - Dielectric / glass materials
 - Positionable camera with depth of field
+- BVH acceleration structure
 - PPM image output
 
 ## Build and Run
 
-Compile:
+This project uses CMake.
+
+### Build
 
 ```bash
-g++ -std=c++17 -O3 -march=native main.cpp -o raytracer
+cmake -S . -B build
+cmake --build build
 ```
 
-Run and save the rendered image:
+This produces an executable at `build/raytracer`.
+
+### Run
 
 ```bash
-./raytracer > image.ppm
+./build/raytracer > image.ppm
 ```
 
 ## Reference

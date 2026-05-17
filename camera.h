@@ -7,6 +7,8 @@
 #include "vec3.h"
 #include "rtweekend.h"
 #include "material.h"
+#include <vector>
+#include <atomic>
 
 class camera{
     public:
@@ -88,24 +90,35 @@ color camera::ray_color(const Ray&r, const hittable & world,int depth){
 
 void camera::render(const hittable& world){
     initialize();
-    std::cout << "P3\n"
-          << image_width << ' ' << image_height << "\n"
-          << "255\n";
-          
-    for(int j=0;j<image_height;j++){
-        std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
-        for(int i=0;i<image_width;i++){
+
+    std::vector<color> framebuffer(image_width * image_height);
+    std::atomic<int> lines_done{0};
+
+    #pragma omp parallel for schedule(dynamic, 1)
+    for(int j = 0; j < image_height; j++){
+        for(int i = 0; i < image_width; i++){
             color pixel_color(0,0,0);
-            for(int s=0;s<samples_per_pixel;s++){
+            for(int s = 0; s < samples_per_pixel; s++){
                 Ray r = get_ray(i, j);
-                pixel_color += ray_color(r, world,max_depth);
+                pixel_color += ray_color(r, world, max_depth);
             }
             pixel_color *= pixel_samples_scale;
-            write_color(std::cout, pixel_color);
+            framebuffer[j * image_width + i] = pixel_color;
+        }
+        int done = ++lines_done;
+        #pragma omp critical
+        std::clog << "\rScanlines done: " << done << " / " << image_height << std::flush;
+    }
+
+    std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+    for(int j = 0; j < image_height; j++){
+        for(int i = 0; i < image_width; i++){
+            write_color(std::cout, framebuffer[j * image_width + i]);
         }
     }
-    std::clog << "\rDone.                 \n";
+    std::clog << "\rDone.                                       \n";
 }
+
 void camera::initialize(){
     image_height=int(image_width/aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;

@@ -3,7 +3,7 @@
 
 #include "vec3.h"
 #include "ray.h"
-
+#include "rtweekend.h"
 #include <algorithm>
 
 class aabb
@@ -12,7 +12,18 @@ public:
     vec3 maximum;
     vec3 minimum;
 
-    aabb() {}
+    aabb()
+    {
+        minimum = vec3(
+            infinity,
+            infinity,
+            infinity);
+
+        maximum = vec3(
+            -infinity,
+            -infinity,
+            -infinity);
+    }
 
     aabb(const vec3 &a, const vec3 &b)
     {
@@ -74,6 +85,40 @@ public:
         }
 
         return true;
+    }
+    int longest_axis() const
+    {
+        double x_size =
+            maximum.x() - minimum.x();
+
+        double y_size =
+            maximum.y() - minimum.y();
+
+        double z_size =
+            maximum.z() - minimum.z();
+
+        if (x_size > y_size)
+        {
+            if (x_size > z_size)
+            {
+                return 0;
+            }
+            else
+            {
+                return 2;
+            }
+        }
+        else
+        {
+            if (y_size > z_size)
+            {
+                return 1;
+            }
+            else
+            {
+                return 2;
+            }
+        }
     }
 };
 

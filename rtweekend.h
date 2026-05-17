@@ -21,9 +21,6 @@ inline double degrees_to_radians(double degrees) {
     return degrees * pi / 180.0;
 }
 
-// 注意: random_double 已移到 vec3.h 顶部
-// 全局 random(min, max) 已删除, 改用 vec3::random(min, max)
-
 inline vec3 random_in_unit_sphere() {
     vec3 trail = vec3::random(-1, 1);
     while (trail.length_squared() > 1 || trail.length_squared() < 1e-160) {
@@ -54,7 +51,6 @@ inline vec3 random_in_unit_disk() {
 
 inline int random_int(int min, int max) 
 {
-    return int(random_double(min, max+1
-));
+    return int(random_double(min, max+1));
 }
 #endif

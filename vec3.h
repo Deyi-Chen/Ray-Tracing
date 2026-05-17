@@ -3,11 +3,14 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <random>
 
 inline double random_double()
 {
-    // [0,1) random number
-    return std::rand() / (RAND_MAX + 1.0);
+    //thread-local for OpenMP
+    thread_local std::mt19937 gen{std::random_device{}()};
+    thread_local std::uniform_real_distribution<double> dist(0.0, 1.0);
+    return dist(gen);
 }
 
 inline double random_double(double min, double max)

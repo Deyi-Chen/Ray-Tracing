@@ -75,12 +75,14 @@ color camera::ray_color(const Ray&r, const hittable & world,int depth){
         return color(0,0,0);
     }
     if(world.hit(r,0.001,infinity,rec)){
-        Ray scattered;
+        /*Ray scattered;
         color attenuation;
         if(rec.mat->scatter(r,rec,attenuation,scattered)){
             return attenuation*ray_color(scattered,world,depth-1);
         }
         return color(0,0,0);
+        */
+       return 0.5 * (rec.normal + color(1,1,1));
     }
     //sky
     vec3 unit_dir=unit_vector(r.direction);

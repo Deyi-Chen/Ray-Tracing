@@ -10,15 +10,13 @@
 #include "bvh.h"
 #include "triangle.h"
 #include "scenes/random_spheres.h"
-#include "obj_loader.h"
+#include "scenes/bunny_scene.h"
 
 int main()
 {
     hittable_list world;
-
-    auto bunny_mat = make_shared<lambertian>(color(0.8, 0.8, 0.8));
-
-    world.add(load_obj("bunny.obj.txt", bunny_mat));
+    world=bunny_scene();
+   
 
     camera cam;
 
@@ -28,8 +26,9 @@ int main()
     cam.max_depth = 10;
 
     cam.lookfrom = vec3(0, 0.1, 0.4);
-    cam.lookat = vec3(0, 0.1, 0);
+    cam.lookat = vec3(-0.025, 0.1, 0);
     cam.vfov = 30;
+
     cam.vup = vec3(0, 1, 0);
 
     cam.defocus_angle = 0.0;

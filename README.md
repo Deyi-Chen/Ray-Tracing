@@ -1,26 +1,18 @@
 # Ray-Tracing
 
-A simple ray tracer implemented while following the **Ray Tracing in One Weekend** tutorial series.
-
-This project renders a basic 3D scene using ray tracing techniques, including rays, spheres, materials, lighting behavior, camera setup, and image output. It also implements a BVH (Bounding Volume Hierarchy) to accelerate ray-object intersection, and parallelizes the render loop with OpenMP, making it practical to render scenes with hundreds of objects
+This project renders 3D scenes using ray tracing techniques, including spheres, triangle meshes, materials, lighting behavior, camera setup, and image output. It supports loading OBJ meshes and implements a BVH (Bounding Volume Hierarchy) acceleration structure for efficient ray-object intersection. The render loop is parallelized with OpenMP, making it practical to render scenes with hundreds of objects and complex geometry.
 
 ## Preview
-
-![Render Preview](./image.png)
+![Stanford Bunny](./rendering_images/bunny_normal.png)
+![Spheres](./rendering_images/random_spheres.png)
 
 ## Features
-
-- Basic ray generation
-- Sphere intersection
-- Surface normals
-- Anti-aliasing
-- Diffuse (Lambertian) materials
-- Metal materials with fuzz
-- Dielectric / glass materials
-- Positionable camera with depth of field
-- BVH acceleration structure
-- OpenMP multi-threaded rendering
-- PPM image output
+- CPU path tracer supporting diffuse, metallic, and dielectric materials
+- Triangle mesh rendering with OBJ loading
+- BVH acceleration structure for efficient ray traversal
+- Thin-lens camera model with depth of field
+- Monte Carlo sampling for anti-aliasing and material scattering
+- OpenMP-based parallel rendering
 
 ## Build and Run
 
@@ -48,8 +40,15 @@ Final scene (1200×675, 500 samples per pixel, max depth 50) on an Intel Core Ul
 | Build               | Time     |
 | ------------------- | -------- |
 | Single-threaded     | ~4m 25s  |
-| OpenMP (24 threads) | ~1m 16s  |
+| OpenMP (24 threads) | ~1m 3s  |
 
-## Reference
+## References
 
-- [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) by Peter Shirley
+- [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) by Peter Shirley 
+- [Stanford Bunny mesh](https://graphics.stanford.edu/~mdfisher/Data/Meshes/bunny.obj)
+
+## Future Work
+
+- Volumetric rendering for clouds, fog, and participating media
+- CUDA-based GPU ray marching and parallel acceleration
+- Signed Distance Function (SDF) rendering 

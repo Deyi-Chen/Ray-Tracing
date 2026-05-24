@@ -90,7 +90,7 @@ color camera::ray_color(const Ray &r, const hittable &world, int depth)
         
         if (rec.mat->scatter(r, rec, attenuation, scattered))
         {
-            bool debug_normal = false;
+            bool debug_normal = true;
             if (debug_normal)
             {
                 return 0.5 * (rec.normal + color(1, 1, 1));

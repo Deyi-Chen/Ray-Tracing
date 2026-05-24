@@ -9,7 +9,36 @@
 #include "material.h"
 #include "bvh.h"
 #include "triangle.h"
+#include "scenes/random_spheres.h"
+#include "obj_loader.h"
 
+int main()
+{
+    hittable_list world;
+
+    auto bunny_mat = make_shared<lambertian>(color(0.8, 0.8, 0.8));
+
+    world.add(load_obj("bunny.obj.txt", bunny_mat));
+
+    camera cam;
+
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 800;
+    cam.samples_per_pixel = 20;
+    cam.max_depth = 10;
+
+    cam.lookfrom = vec3(0, 0.1, 0.4);
+    cam.lookat = vec3(0, 0.1, 0);
+    cam.vfov = 30;
+    cam.vup = vec3(0, 1, 0);
+
+    cam.defocus_angle = 0.0;
+    cam.focus_dist = 1.0;
+
+    cam.render(world);
+}
+
+/*
 int main()
 {
 
@@ -33,7 +62,4 @@ int main()
 
     cam.render(world);
 }
-
-/*
-
 */

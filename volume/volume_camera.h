@@ -1,16 +1,16 @@
-#ifndef CAMERA_H
-#define CAMERA_H
-
-#include "hittable.h"
-#include "color.h"
-#include "ray.h"
+#ifndef VOLUME_CAMERA_H
+#define VOLUME_CAMERA_H
 #include "vec3.h"
+#include "ray.h"
+#include "color.h"
 #include "rtweekend.h"
-#include "material.h"
+#include "volume_sphere.h"
 #include <vector>
 #include <atomic>
+#include <cmath>
 
-class camera
+
+class volume_camera
 {
 public:
     double aspect_ratio = 16.0 / 9.0;
@@ -18,7 +18,7 @@ public:
     int samples_per_pixel = 5;
     int max_depth = 50;
     double vfov = 90;
-    void render(const hittable &world);
+    void render(const VolumeSphere &world);
     vec3 lookat = vec3(0, 0, -1);
     vec3 lookfrom = vec3(0, 0, 0);
     vec3 vup = vec3(0, 1, 0);
@@ -39,13 +39,13 @@ private:
     vec3 defocus_disk_u;
     vec3 defocus_disk_v;
     void initialize();
-    color ray_color(const Ray &r, const hittable &world, int depth);
+    color ray_color(const Ray &r, const VolumeSphere &world);
     vec3 sample_square() const;
     vec3 disk_sample() const;
     Ray get_ray(int i, int j) const;
 };
 
-vec3 camera::sample_square() const
+vec3 volume_camera::sample_square() const
 {
     // return offset by [-0.5, 0.5] × [-0.5, 0.5]
     double offset1 = (random_double(0, 2) - 1) * 0.5;
@@ -53,7 +53,7 @@ vec3 camera::sample_square() const
     return vec3(offset1, offset2, 0);
 }
 
-Ray camera::get_ray(int i, int j) const
+Ray volume_camera::get_ray(int i, int j) const
 {
     //(i, j) pixel+ random offset→ shoot a ray from camera
     vec3 offset = sample_square();
@@ -67,47 +67,37 @@ Ray camera::get_ray(int i, int j) const
     {
         origin = disk_sample();
     }
-    vec3 direction = pixel_loc - origin;
+    vec3 direction = unit_vector(pixel_loc - origin);
     return Ray(origin, direction);
 }
 
-vec3 camera::disk_sample() const
+vec3 volume_camera::disk_sample() const
 {
     auto p = random_in_unit_disk();
     return camera_o + p.x() * defocus_disk_u + p.y() * defocus_disk_v;
 }
-color camera::ray_color(const Ray &r, const hittable &world, int depth)
+
+color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
 {
-    hit_record rec;
-    if (depth == 0)
-    {
-        return color(0, 0, 0);
-    }
-    if (world.hit(r, 0.001, infinity, rec))
-    {
-        Ray scattered;
-        color attenuation;
-        
-        if (rec.mat->scatter(r, rec, attenuation, scattered))
-        {
-            bool debug_normal = false;
-            if (debug_normal)
-            {
-                return 0.5 * (rec.normal + color(1, 1, 1));
-            }
-            return attenuation * ray_color(scattered, world, depth - 1);
-        }
-        return color(0, 0, 0);
-    }
     // sky
     vec3 unit_dir = unit_vector(r.direction);
     double a = 0.5 * (unit_dir.y() + 1.0);
-    return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    color sky_color=(1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    double t0=0.0, t1=0.0;
+    if(world.hit(r,t0,t1)){
+        double distance=t1-t0;
+        double T=exp(-distance*world.sigma_a);
+        color result=T*sky_color+(1-T)*world.color;
+        return result;
+    }
+    else{
+        return sky_color;
+    }
 }
 
-void camera::render(const hittable &world)
+void volume_camera::render(const VolumeSphere &world)
 {
-    initialize();
+    initialize();  
 
     std::vector<color> framebuffer(image_width * image_height);
     std::atomic<int> lines_done{0};
@@ -121,7 +111,7 @@ void camera::render(const hittable &world)
             for (int s = 0; s < samples_per_pixel; s++)
             {
                 Ray r = get_ray(i, j);
-                pixel_color += ray_color(r, world, max_depth);
+                pixel_color += ray_color(r, world);
             }
             pixel_color *= pixel_samples_scale;
             framebuffer[j * image_width + i] = pixel_color;
@@ -143,7 +133,7 @@ void camera::render(const hittable &world)
     std::clog << "\rDone.                                       \n";
 }
 
-void camera::initialize()
+void volume_camera::initialize()
 {
     image_height = int(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
@@ -174,4 +164,6 @@ void camera::initialize()
     defocus_disk_u = u * defocus_radius;
     defocus_disk_v = v * defocus_radius;
 }
-#endif
+
+
+#endif 

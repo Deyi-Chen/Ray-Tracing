@@ -10,5 +10,9 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
+include_directories(${CMAKE_SOURCE_DIR})
+
 add_executable(raytracer main.cpp)
 target_link_libraries(raytracer PRIVATE OpenMP::OpenMP_CXX)
+add_executable(volume_raytracer volume/volume_main.cpp)
+target_link_libraries(volume_raytracer PRIVATE OpenMP::OpenMP_CXX)

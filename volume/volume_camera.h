@@ -9,7 +9,6 @@
 #include <atomic>
 #include <cmath>
 
-
 class volume_camera
 {
 public:
@@ -82,22 +81,52 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
     // sky
     vec3 unit_dir = unit_vector(r.direction);
     double a = 0.5 * (unit_dir.y() + 1.0);
-    color sky_color=(1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
-    double t0=0.0, t1=0.0;
-    if(world.hit(r,t0,t1)){
-        double distance=t1-t0;
-        double T=exp(-distance*world.sigma_a);
-        color result=T*sky_color+(1-T)*world.color;
-        return result;
-    }
-    else{
+    color sky_color = (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    double t0 = 0.0, t1 = 0.0;
+    if (!world.hit(r, t0, t1))
+    {
         return sky_color;
     }
+    vec3 light_pos = vec3{0, 1, 0};
+    color light_color = vec3{1.3, 0.3, 0.9};
+    double sigma_a = world.sigma_a;
+    double sigma_s = world.sigma_s;
+    double sigma_t=sigma_a+sigma_s;
+
+    double step_size = 0.2;
+    int ns=(int)std::ceil((t1-t0)/step_size);
+    ns=std::max(1,ns);
+    step_size=(t1-t0)/ns;
+
+    double T = 1.0;
+    color in_scatter = vec3{0, 0, 0};
+
+    for (int i=0;i<ns;i++)
+    {
+        double t=t1-step_size*(i+0.5);
+        auto pos = r.at(t);
+        //background 
+        double Att = std::exp(-sigma_t * step_size);
+        T = T * Att;
+        //in scattering
+        vec3 to_light=light_pos-pos;
+        double dis_light = to_light.length();
+        vec3 to_light_n=unit_vector(to_light);
+        Ray light_ray{pos,to_light_n};
+        double lt0=0.0,lt1=0.0;
+        world.hit(light_ray,lt0,lt1);
+        double T_light= std::exp(-sigma_t * lt1);
+        color in_scatter_step = light_color * T_light * sigma_s * step_size * world.color;
+        in_scatter +=in_scatter_step;
+        in_scatter*=Att;
+
+    }
+    return sky_color * T + in_scatter;
 }
 
 void volume_camera::render(const VolumeSphere &world)
 {
-    initialize();  
+    initialize();
 
     std::vector<color> framebuffer(image_width * image_height);
     std::atomic<int> lines_done{0};
@@ -165,5 +194,4 @@ void volume_camera::initialize()
     defocus_disk_v = v * defocus_radius;
 }
 
-
-#endif 
+#endif

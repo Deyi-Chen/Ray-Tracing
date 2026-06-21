@@ -109,7 +109,7 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
     double Att = std::exp(-sigma_t * density* step_size);
     for (int i = 0; i < ns; i++)
     {
-        double t = t0 + step_size * (i + 0.5);
+        double t = t0 + step_size * (i + random_double(0,1));
         auto pos = r.at(t);
         // background
         T = T * Att;

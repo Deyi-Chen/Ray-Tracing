@@ -51,7 +51,11 @@ vec3 volume_camera::sample_square() const
     double offset2 = (random_double(0, 2) - 1) * 0.5;
     return vec3(offset1, offset2, 0);
 }
-
+inline double phase_hg(double g, double cos_theta){
+    double a=1.0+g*g-2.0*g*cos_theta;
+    double result=(1.0/(4*pi))*((1.0-g*g)/(a*std::sqrt(a)));
+    return result;
+}
 Ray volume_camera::get_ray(int i, int j) const
 {
     //(i, j) pixel+ random offset→ shoot a ray from camera
@@ -88,38 +92,41 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
         return sky_color;
     }
     vec3 light_pos = vec3{0, 1, 0};
-    color light_color = vec3{1.3, 0.3, 0.9};
+    color light_color = vec3{1.3, 0.3, 0.9}*5.0;
     double sigma_a = world.sigma_a;
     double sigma_s = world.sigma_s;
-    double sigma_t=sigma_a+sigma_s;
+    double sigma_t = sigma_a + sigma_s;
+    double density=1.0;
+    double g=0.8;
 
     double step_size = 0.2;
-    int ns=(int)std::ceil((t1-t0)/step_size);
-    ns=std::max(1,ns);
-    step_size=(t1-t0)/ns;
+    int ns = (int)std::ceil((t1 - t0) / step_size);
+    ns = std::max(1, ns);
+    step_size = (t1 - t0) / ns;
 
     double T = 1.0;
     color in_scatter = vec3{0, 0, 0};
-
-    for (int i=0;i<ns;i++)
+    double Att = std::exp(-sigma_t * density* step_size);
+    for (int i = 0; i < ns; i++)
     {
-        double t=t1-step_size*(i+0.5);
+        double t = t0 + step_size * (i + 0.5);
         auto pos = r.at(t);
-        //background 
-        double Att = std::exp(-sigma_t * step_size);
+        // background
         T = T * Att;
-        //in scattering
-        vec3 to_light=light_pos-pos;
+        if (T < 0.001)
+            break; // optimization
+        // in scattering
+        vec3 to_light = light_pos - pos;
         double dis_light = to_light.length();
-        vec3 to_light_n=unit_vector(to_light);
-        Ray light_ray{pos,to_light_n};
-        double lt0=0.0,lt1=0.0;
-        world.hit(light_ray,lt0,lt1);
-        double T_light= std::exp(-sigma_t * lt1);
-        color in_scatter_step = light_color * T_light * sigma_s * step_size * world.color;
-        in_scatter +=in_scatter_step;
-        in_scatter*=Att;
-
+        vec3 to_light_n = unit_vector(to_light);
+        Ray light_ray{pos, to_light_n};
+        double lt0 = 0.0, lt1 = 0.0;
+        world.hit(light_ray, lt0, lt1);
+        double T_light = std::exp(-sigma_t * lt1*density);
+        double cos_theta=-dot(to_light_n,unit_dir);
+        double ph=phase_hg(g,cos_theta);
+        color in_scatter_step = ph * light_color * T_light * sigma_s * step_size * density*world.color;
+        in_scatter += T * in_scatter_step;
     }
     return sky_color * T + in_scatter;
 }

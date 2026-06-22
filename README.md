@@ -33,6 +33,10 @@ This produces an optimized (-O3) executable at build/raytracer. CMake defaults t
 ./build/raytracer > image.ppm
 ```
 
+```bash
+./build/volume_raytracer > image.ppm
+```
+
 ## Performance
 
 Final scene (1200×675, 500 samples per pixel, max depth 50) on an Intel Core Ultra 9 275HX (24 cores, WSL2):

@@ -8,6 +8,7 @@
 #include <vector>
 #include <atomic>
 #include <cmath>
+#include "perlin.h"
 
 class volume_camera
 {
@@ -51,10 +52,22 @@ vec3 volume_camera::sample_square() const
     double offset2 = (random_double(0, 2) - 1) * 0.5;
     return vec3(offset1, offset2, 0);
 }
-inline double phase_hg(double g, double cos_theta){
-    double a=1.0+g*g-2.0*g*cos_theta;
-    double result=(1.0/(4*pi))*((1.0-g*g)/(a*std::sqrt(a)));
+inline double phase_hg(double g, double cos_theta)
+{
+    double a = 1.0 + g * g - 2.0 * g * cos_theta;
+    double result = (1.0 / (4 * pi)) * ((1.0 - g * g) / (a * std::sqrt(a)));
     return result;
+}
+inline double fbm(double x, double y, double z)
+{
+    double sum = 0, amp = 1.0, freq = 1.0;
+    for (int o = 0; o < 5; o++)
+    {
+        sum += amp * perlin_noise(x * freq, y * freq, z * freq);
+        freq *= 2.0;
+        amp *= 0.5;
+    }
+    return sum;
 }
 Ray volume_camera::get_ray(int i, int j) const
 {
@@ -92,42 +105,62 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
         return sky_color;
     }
     vec3 light_pos = vec3{0, 1, 0};
-    color light_color = vec3{1.3, 0.3, 0.9}*5.0;
+    color light_color = vec3{1.3, 0.3, 0.9};
     double sigma_a = world.sigma_a;
     double sigma_s = world.sigma_s;
     double sigma_t = sigma_a + sigma_s;
-    double density=1.0;
-    double g=0.8;
+    double g = 0.8;
 
-    double step_size = 0.2;
+    double step_size = 0.05;
     int ns = (int)std::ceil((t1 - t0) / step_size);
     ns = std::max(1, ns);
     step_size = (t1 - t0) / ns;
 
     double T = 1.0;
     color in_scatter = vec3{0, 0, 0};
-    double Att = std::exp(-sigma_t * density* step_size);
-    for (int i = 0; i < ns; i++)
+    bool debug_mode = false;
+    if (!debug_mode)
     {
-        double t = t0 + step_size * (i + random_double(0,1));
-        auto pos = r.at(t);
-        // background
-        T = T * Att;
-        if (T < 0.001)
-            break; // optimization
-        // in scattering
-        vec3 to_light = light_pos - pos;
-        double dis_light = to_light.length();
-        vec3 to_light_n = unit_vector(to_light);
-        Ray light_ray{pos, to_light_n};
-        double lt0 = 0.0, lt1 = 0.0;
-        world.hit(light_ray, lt0, lt1);
-        double T_light = std::exp(-sigma_t * lt1*density);
-        double cos_theta=-dot(to_light_n,unit_dir);
-        double ph=phase_hg(g,cos_theta);
-        color in_scatter_step = ph * light_color * T_light * sigma_s * step_size * density*world.color;
-        in_scatter += T * in_scatter_step;
+        for (int i = 0; i < ns; i++)
+        {
+            double t = t0 + step_size * (i + random_double(0, 1));
+            auto pos = r.at(t);
+            double frequency = 7;
+            vec3 sp = pos * frequency + vec3(13.7, 7.3, 2.9); // random offset
+            auto density = fbm(sp.x(), sp.y(), sp.z());
+            density = std::max(0.0, density);
+            //density=0.5*(density+1);
+            density = density * 5;
+            double Att = std::exp(-sigma_t * density * step_size);
+            // background
+            T = T * Att;
+            if (T < 0.001)
+                break; // optimization
+            // in scattering
+            vec3 to_light = light_pos - pos;
+            double dis_light = to_light.length();
+            vec3 to_light_n = unit_vector(to_light);
+            Ray light_ray{pos, to_light_n};
+            double lt0 = 0.0, lt1 = 0.0;
+            world.hit(light_ray, lt0, lt1);
+            double T_light = std::exp(-sigma_t * lt1 * density);
+            double cos_theta = -dot(to_light_n, unit_dir);
+            double ph = phase_hg(g, cos_theta);
+            color in_scatter_step = ph * light_color * T_light * sigma_s * step_size * density * world.color;
+            in_scatter += T * in_scatter_step;
+        }
+    }else{
+        for(int i=0;i<ns;i++){
+            double t=t0+step_size*(i+random_double(0,1));
+            auto pos=r.at(t);
+            double frequency = 7;
+            vec3 sp = pos * frequency + vec3(13.7, 7.3, 2.9); // random offset
+            auto density = fbm(sp.x(), sp.y(), sp.z());
+            density = std::max(0.0, density);
+            return color(density,density,density);
+        }
     }
+
     return sky_color * T + in_scatter;
 }
 

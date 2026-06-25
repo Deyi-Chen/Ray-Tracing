@@ -69,6 +69,35 @@ inline double fbm(double x, double y, double z)
     }
     return sum;
 }
+inline double real_density(vec3 pos)
+{
+    double frequency = 7;
+    vec3 sp = pos * frequency + vec3(13.7, 7.3, 2.9); // random offset
+    auto density = fbm(sp.x(), sp.y(), sp.z());
+    density = std::max(0.0, density);
+    // density=0.5*(density+1);
+    density = density * 5;
+    return density;
+}
+inline double shadow_T_light(double sigma_t, const Ray& r, double leave_t){
+    double T_light=1.0;
+    double step_size=0.05;
+    int ns = (int)std::ceil((leave_t) / step_size);
+    ns = std::max(1, ns);
+    step_size = leave_t / ns;
+    for(int i=0;i<ns;i++){
+        double t=step_size * (i + random_double(0, 1));
+        auto pos=r.at(t);
+        double density=real_density(pos);
+        double Att=std::exp(-sigma_t*step_size*density);
+        T_light=T_light*Att;
+        if(T_light<0.001){
+            break;
+        }        
+    }
+    
+    return T_light;
+}
 Ray volume_camera::get_ray(int i, int j) const
 {
     //(i, j) pixel+ random offset→ shoot a ray from camera
@@ -83,7 +112,7 @@ Ray volume_camera::get_ray(int i, int j) const
     {
         origin = disk_sample();
     }
-    vec3 direction = unit_vector(pixel_loc - origin);
+    vec3 direction = unit_vector(pixel_loc - origin); //ensure the direction has length 1
     return Ray(origin, direction);
 }
 
@@ -111,7 +140,7 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
     double sigma_t = sigma_a + sigma_s;
     double g = 0.8;
 
-    double step_size = 0.05;
+    double step_size = 0.1;
     int ns = (int)std::ceil((t1 - t0) / step_size);
     ns = std::max(1, ns);
     step_size = (t1 - t0) / ns;
@@ -125,12 +154,7 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
         {
             double t = t0 + step_size * (i + random_double(0, 1));
             auto pos = r.at(t);
-            double frequency = 7;
-            vec3 sp = pos * frequency + vec3(13.7, 7.3, 2.9); // random offset
-            auto density = fbm(sp.x(), sp.y(), sp.z());
-            density = std::max(0.0, density);
-            //density=0.5*(density+1);
-            density = density * 5;
+            double density=real_density(pos);
             double Att = std::exp(-sigma_t * density * step_size);
             // background
             T = T * Att;
@@ -143,21 +167,24 @@ color volume_camera::ray_color(const Ray &r, const VolumeSphere &world)
             Ray light_ray{pos, to_light_n};
             double lt0 = 0.0, lt1 = 0.0;
             world.hit(light_ray, lt0, lt1);
-            double T_light = std::exp(-sigma_t * lt1 * density);
+            double T_light = shadow_T_light(sigma_t,light_ray,lt1);
             double cos_theta = -dot(to_light_n, unit_dir);
             double ph = phase_hg(g, cos_theta);
             color in_scatter_step = ph * light_color * T_light * sigma_s * step_size * density * world.color;
             in_scatter += T * in_scatter_step;
         }
-    }else{
-        for(int i=0;i<ns;i++){
-            double t=t0+step_size*(i+random_double(0,1));
-            auto pos=r.at(t);
+    }
+    else
+    {
+        for (int i = 0; i < ns; i++)
+        {
+            double t = t0 + step_size * (i + random_double(0, 1));
+            auto pos = r.at(t);
             double frequency = 7;
             vec3 sp = pos * frequency + vec3(13.7, 7.3, 2.9); // random offset
             auto density = fbm(sp.x(), sp.y(), sp.z());
             density = std::max(0.0, density);
-            return color(density,density,density);
+            return color(density, density, density);
         }
     }
 

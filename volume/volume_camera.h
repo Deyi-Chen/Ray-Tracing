@@ -5,9 +5,14 @@
 #include "color.h"
 #include "rtweekend.h"
 #include "volume_sphere.h"
+#include "volume_mesh.h"
+#include "mesh_sdf.h"
 #include <vector>
+#include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <limits>
+#include <iostream>
 #include "perlin.h"
 
 class volume_camera
@@ -19,6 +24,7 @@ public:
     int max_depth = 50;
     double vfov = 90;
     void render(const VolumeSphere &world);
+    void render(const VoxelGrid &grid, const double &sigma_s, const double &sigma_a, const color & volume_color ) ;
     vec3 lookat = vec3(0, 0, -1);
     vec3 lookfrom = vec3(0, 0, 0);
     vec3 vup = vec3(0, 1, 0);
@@ -40,6 +46,7 @@ private:
     vec3 defocus_disk_v;
     void initialize();
     color ray_color(const Ray &r, const VolumeSphere &world);
+    color ray_color(const Ray& r,const VoxelGrid& grid,const double& sigma_s, const double &sigma_a, const color & volume_color);
     vec3 sample_square() const;
     vec3 disk_sample() const;
     Ray get_ray(int i, int j) const;
@@ -229,6 +236,44 @@ void volume_camera::render(const VolumeSphere &world)
     std::clog << "\rDone.                                       \n";
 }
 
+void volume_camera::render(const VoxelGrid &grid, const double &sigma_s, const double &sigma_a, const color & volume_color ) 
+{
+    initialize();
+
+    std::vector<color> framebuffer(image_width * image_height);
+    std::atomic<int> lines_done{0};
+
+#pragma omp parallel for schedule(dynamic, 1)
+    for (int j = 0; j < image_height; j++)
+    {
+        for (int i = 0; i < image_width; i++)
+        {
+            color pixel_color(0, 0, 0);
+            for (int s = 0; s < samples_per_pixel; s++)
+            {
+                Ray r = get_ray(i, j);
+                pixel_color += ray_color(r, grid,sigma_s, sigma_a,volume_color);
+            }
+            pixel_color *= pixel_samples_scale;
+            framebuffer[j * image_width + i] = pixel_color;
+        }
+        int done = ++lines_done;
+#pragma omp critical
+        std::clog << "\rScanlines done: " << done << " / " << image_height << std::flush;
+    }
+
+    std::cout << "P3\n"
+              << image_width << ' ' << image_height << "\n255\n";
+    for (int j = 0; j < image_height; j++)
+    {
+        for (int i = 0; i < image_width; i++)
+        {
+            write_color(std::cout, framebuffer[j * image_width + i]);
+        }
+    }
+    std::clog << "\rDone.                                       \n";
+}
+
 void volume_camera::initialize()
 {
     image_height = int(image_width / aspect_ratio);
@@ -259,6 +304,96 @@ void volume_camera::initialize()
     auto defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle / 2));
     defocus_disk_u = u * defocus_radius;
     defocus_disk_v = v * defocus_radius;
+}
+inline double sdf_to_density(double sdf)
+{
+    constexpr double density_max = 2.0;
+    return sdf < 0.0 ? density_max : 0.0;
+}
+inline double shadow_T_light_grid(double sigma_t, const Ray& r, const VoxelGrid& grid, double leave_t){
+    double T_light=1.0;
+    double step_size=std::min({grid.voxel_size.x(),grid.voxel_size.y(),grid.voxel_size.z()});
+    step_size*=0.5;
+    int ns=(int)std::ceil((leave_t)/step_size);
+    ns=std::max(1,ns);
+    step_size=(leave_t)/ns;
+    for(int i=0;i<ns;i++){
+        double t=step_size * (i + random_double(0, 1));
+        auto pos=r.at(t);
+        double sdf=grid.sample_sdf(pos);
+        double density=sdf_to_density(sdf);
+        double Att=std::exp(-sigma_t*step_size*density);
+        T_light=T_light*Att;
+        if(T_light<0.001){
+            break;
+        }        
+    }
+    
+    return T_light;
+}
+
+
+color volume_camera::ray_color(const Ray& r,const VoxelGrid& grid, const double & sigma_s, const double &sigma_a, const color & volume_color){
+    // sky
+    vec3 unit_dir = unit_vector(r.direction);
+    double a = 0.5 * (-unit_dir.z() + 1.0);
+    color sky_color = (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    double t0 = 0.0;
+    double t1 = std::numeric_limits<double>::infinity();
+    if (!grid.hit_box(r, t0, t1))
+    {
+        return sky_color;
+    }
+    t0=std::max(t0,0.0);
+    if(t1<=t0){
+        return sky_color;
+    }
+    vec3 light_pos{2.0, 1.5, -1.5};
+    vec3 light_color{1.0,1.0,1.0};
+    double light_intensity=20.0;
+    vec3 light_radiance=light_color*light_intensity;
+    double sigma_t=sigma_s+sigma_a;
+    double g=0.2;
+    
+    double step_size=std::min({grid.voxel_size.x(),grid.voxel_size.y(),grid.voxel_size.z()});
+    step_size*=0.5;
+    int ns=(int)std::ceil((t1-t0)/step_size);
+    ns=std::max(1,ns);
+    step_size=(t1-t0)/ns;
+
+    double T=1.0;
+    color in_scatter = vec3{0, 0, 0};
+    for(int i=0;i<ns;i++){
+        double t=t0+step_size*(i+random_double(0,1));
+        auto pos=r.at(t);
+        double sdf=grid.sample_sdf(pos);
+        double density=sdf_to_density(sdf);
+        if(density<=0){
+            continue;
+        }
+        double Att=std::exp(-sigma_t*density*step_size);
+        double T_mid =T * std::sqrt(Att);
+
+        vec3 to_light=light_pos-pos;
+        double dis_light=to_light.length();
+        vec3 to_light_n=unit_vector(to_light);
+        Ray light_ray{pos,to_light_n};
+        double lt0=0.0;
+        double lt1 = std::numeric_limits<double>::infinity();
+        grid.hit_box(light_ray,lt0,lt1);
+        double T_light = shadow_T_light_grid(sigma_t,light_ray,grid,lt1);
+        //double T_light=1.0;
+        double cos_theta = -dot(to_light_n, unit_dir);
+        double ph = phase_hg(g, cos_theta);
+        color in_scatter_step = ph * light_radiance * T_light * sigma_s * step_size * density * volume_color;
+        in_scatter += T_mid * in_scatter_step;
+        T=T*Att;
+        if(T<0.001){
+            break;
+        }
+    }
+    return sky_color * T + in_scatter;
+
 }
 
 #endif

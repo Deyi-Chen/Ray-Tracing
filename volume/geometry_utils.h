@@ -3,6 +3,7 @@
 
 #include "vec3.h"
 #include "volume_mesh.h"
+#include "ray.h"
 #include <limits>
 #include <algorithm>
 
@@ -74,5 +75,37 @@ inline double point_to_mesh_unsigned_d(vec3 p, const Volume_mesh &mesh)
     return d;
 }
 
+inline bool ray_hit_triangle(const Ray &r, const vec3 & v0, const vec3 & v1, const vec3& v2) 
+{
+        auto o = r.origin;
+        auto dir = r.direction;
+        auto e1 = v1 - v0;
+        auto e2 = v2 - v0;
+        auto t_dis = o - v0;
+        auto pvec = cross(dir, e2);
+        auto det = dot(e1, pvec);
+        if (fabs(det) < 1e-8)
+        {
+            return false;
+        }
+        auto u = dot(t_dis, pvec) / det;
+        if (u < 0.0 || u > 1.0)
+        {
+            return false;
+        }
+        auto qvec = cross(t_dis, e1);
+        auto v = dot(dir, qvec) / det;
+        if (v < 0.0 || u + v > 1.0)
+        {
+            return false;
+        }
+        auto t = dot(e2, qvec) / det;
+        constexpr double eps = 1e-10;
+        if (t < eps)
+        {
+            return false;
+        }
+        return true;
+}
 
 #endif 
